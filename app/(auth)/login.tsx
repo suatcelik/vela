@@ -1,20 +1,19 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useAuthStore } from '../../stores/useAuthStore';
+import React, { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Colors, Fonts, Spacing, Radius } from '../../constants/theme';
+import { Colors, Fonts, Radius, Spacing } from '../../constants/theme';
+import { useAuthStore } from '../../stores/useAuthStore';
 
 export default function LoginScreen() {
   const { signIn, loading } = useAuthStore();
@@ -23,12 +22,15 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    // E-postadaki boşlukları temizleyip küçük harfe çeviriyoruz
+    const sanitizedEmail = email.trim().toLowerCase();
+
+    if (!sanitizedEmail || !password) {
       setError('E-posta ve şifre gerekli.');
       return;
     }
     setError(null);
-    const { error: err } = await signIn(email, password);
+    const { error: err } = await signIn(sanitizedEmail, password);
     if (err) setError(err);
     // on success, _layout.tsx will redirect to (tabs)
   };
@@ -68,6 +70,7 @@ export default function LoginScreen() {
                 label="E-posta"
                 placeholder="ornek@email.com"
                 keyboardType="email-address"
+                autoCapitalize="none"
                 value={email}
                 onChangeText={setEmail}
                 error={error && !email ? 'Gerekli' : undefined}
@@ -117,106 +120,22 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   flex: { flex: 1 },
-
-  scroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: Spacing.xxl,
-    gap: Spacing.xxl,
-  },
-
-  logoWrap: {
-    alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-
-  logoBox: {
-    width: 64,
-    height: 64,
-    borderRadius: Radius.xl,
-    backgroundColor: 'rgba(26,64,128,0.6)',
-    borderWidth: 1,
-    borderColor: 'rgba(0,200,150,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.xs,
-  },
-
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: Spacing.xxl, gap: Spacing.xxl },
+  logoWrap: { alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.md },
+  logoBox: { width: 64, height: 64, borderRadius: Radius.xl, backgroundColor: 'rgba(26,64,128,0.6)', borderWidth: 1, borderColor: 'rgba(0,200,150,0.25)', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xs },
   logoEmoji: { fontSize: 28 },
-
-  appName: {
-    fontFamily: Fonts.extraBold,
-    fontSize: 36,
-    color: Colors.white,
-    letterSpacing: -1,
-  },
-
+  appName: { fontFamily: Fonts.extraBold, fontSize: 36, color: Colors.white, letterSpacing: -1 },
   appNameAccent: { color: Colors.green400 },
-
-  tagline: {
-    fontFamily: Fonts.regular,
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.45)',
-  },
-
-  card: {
-    backgroundColor: Colors.white,
-    borderRadius: Radius.xxl,
-    padding: Spacing.xxl,
-    gap: Spacing.sm,
-  },
-
-  cardTitle: {
-    fontFamily: Fonts.extraBold,
-    fontSize: 24,
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-
-  cardSub: {
-    fontFamily: Fonts.regular,
-    fontSize: 14,
-    color: Colors.textMuted,
-    marginBottom: Spacing.md,
-  },
-
+  tagline: { fontFamily: Fonts.regular, fontSize: 14, color: 'rgba(255,255,255,0.45)' },
+  card: { backgroundColor: Colors.white, borderRadius: Radius.xxl, padding: Spacing.xxl, gap: Spacing.sm },
+  cardTitle: { fontFamily: Fonts.extraBold, fontSize: 24, color: Colors.textPrimary, letterSpacing: -0.5 },
+  cardSub: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted, marginBottom: Spacing.md },
   form: { gap: Spacing.lg },
-
-  errorBox: {
-    backgroundColor: Colors.red100,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-  },
-
-  errorText: {
-    fontFamily: Fonts.medium,
-    fontSize: 13,
-    color: Colors.red500,
-  },
-
+  errorBox: { backgroundColor: Colors.red100, borderRadius: Radius.md, padding: Spacing.md },
+  errorText: { fontFamily: Fonts.medium, fontSize: 13, color: Colors.red500 },
   forgotWrap: { alignItems: 'center' },
-  forgot: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 13,
-    color: Colors.navy600,
-  },
-
-  registerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  registerText: {
-    fontFamily: Fonts.regular,
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.5)',
-  },
-
-  registerLink: {
-    fontFamily: Fonts.bold,
-    fontSize: 14,
-    color: Colors.green400,
-  },
+  forgot: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.navy600 },
+  registerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  registerText: { fontFamily: Fonts.regular, fontSize: 14, color: 'rgba(255,255,255,0.5)' },
+  registerLink: { fontFamily: Fonts.bold, fontSize: 14, color: Colors.green400 },
 });

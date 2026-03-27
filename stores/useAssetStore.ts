@@ -70,38 +70,19 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   fetchRates: async () => {
     set({ ratesLoading: true });
     try {
-      // CollectAPI altın + ExchangeRate-API döviz + CoinGecko kripto
-      // Gerçek projede Supabase Edge Function üzerinden çağır (API key güvenliği için)
-      // Burada mock data + gerçek CoinGecko public endpoint kullanıyoruz
-      const [fxRes, cryptoRes] = await Promise.all([
-        fetch('https://api.exchangerate-api.com/v4/latest/TRY'),
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=try'),
-      ]);
+      // API çağrıları istemciden sunucuya (Edge Function) taşındı
+      const { data, error } = await supabase.functions.invoke('get_exchange_rates');
 
-      const fx = await fxRes.json();
-      const crypto = await cryptoRes.json();
+      if (error || !data) throw new Error('Kurlar çekilemedi');
 
-      // TRY bazında: 1 TRY kaç birim → ters çevir
-      const usdRate = fx.rates?.USD ? 1 / fx.rates.USD : 38.5;
-      const eurRate = fx.rates?.EUR ? 1 / fx.rates.EUR : 41.5;
-      const gbpRate = fx.rates?.GBP ? 1 / fx.rates.GBP : 49.0;
-
-      const rates: ExchangeRates = {
-        USD: usdRate,
-        EUR: eurRate,
-        GBP: gbpRate,
-        XAU: usdRate * 32.15 * 31.1035, // troy oz → gram × USD/TRY (yaklaşık)
-        BTC: crypto?.bitcoin?.try ?? usdRate * 84000,
-        ETH: crypto?.ethereum?.try ?? usdRate * 3200,
-        updated_at: new Date().toISOString(),
-      };
-      set({ rates, ratesLoading: false });
-    } catch {
+      set({ rates: data as ExchangeRates, ratesLoading: false });
+    } catch (err) {
+      console.error("Kur getirme hatası:", err);
       // Fallback mock rates
       set({
         rates: {
           USD: 38.5, EUR: 41.5, GBP: 49.0,
-          XAU: 7100, BTC: 3250000, ETH: 125000,
+          XAU: 3100, BTC: 3250000, ETH: 125000,
           updated_at: new Date().toISOString(),
         },
         ratesLoading: false,

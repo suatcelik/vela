@@ -1,14 +1,14 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useAuthStore } from '../../stores/useAuthStore';
-import { useDebtStore } from '../../stores/useDebtStore';
-import { useAssetStore } from '../../stores/useAssetStore';
-import { useBudgetStore } from '../../stores/useBudgetStore';
-import { Colors, Fonts, Spacing, Radius, Shadow } from '../../constants/theme';
-import { formatCurrency, formatNumber, formatDateShort, initials, pctStr } from '../../lib/formatters';
+import React, { useEffect, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ASSET_LABELS } from '../../constants/categories';
+import { Colors, Fonts, Radius, Shadow, Spacing } from '../../constants/theme';
+import { formatDateShort, formatNumber, initials, pctStr } from '../../lib/formatters';
+import { useAssetStore } from '../../stores/useAssetStore';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { useBudgetStore } from '../../stores/useBudgetStore';
+import { useDebtStore } from '../../stores/useDebtStore';
 
 export default function HomeScreen() {
   const { profile } = useAuthStore();
@@ -16,11 +16,22 @@ export default function HomeScreen() {
   const { fetchAssets, fetchRates, assetsWithValue, totalValue, totalPnL, totalPnLPercent } = useAssetStore();
   const { fetchTransactions, fetchBudgets, monthlyIncome, monthlyExpense } = useBudgetStore();
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const firstName = profile?.full_name?.split(' ')[0] ?? 'Kullanıcı';
+
+  // Dinamik para birimi sembolü
+  const currencySymbol = profile?.currency === 'USD' ? '$' : profile?.currency === 'EUR' ? '€' : '₺';
+
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Günaydın' : hour < 18 ? 'İyi günler' : 'İyi akşamlar';
 
-  const refreshAll = () => { fetchDebts(); fetchAssets(); fetchRates(); fetchTransactions(); fetchBudgets(); };
+  const refreshAll = async () => {
+    setIsRefreshing(true);
+    await Promise.all([fetchDebts(), fetchAssets(), fetchRates(), fetchTransactions(), fetchBudgets()]);
+    setIsRefreshing(false);
+  };
+
   useEffect(() => { refreshAll(); }, []);
 
   const assets = assetsWithValue().slice(0, 3);
@@ -45,7 +56,7 @@ export default function HomeScreen() {
         </View>
         <View style={s.netCard}>
           <Text style={s.netLbl}>Toplam Net Değer</Text>
-          <Text style={s.netVal}>₺{formatNumber(netWorth, 2)}</Text>
+          <Text style={s.netVal}>{currencySymbol}{formatNumber(netWorth, 2)}</Text>
           {pnl !== 0 && (
             <View style={[s.pnlBadge, { backgroundColor: pnl >= 0 ? 'rgba(0,200,150,0.15)' : 'rgba(240,64,96,0.15)', borderColor: pnl >= 0 ? 'rgba(0,200,150,0.3)' : 'rgba(240,64,96,0.3)' }]}>
               <Text style={[s.pnlTxt, { color: pnl >= 0 ? Colors.green400 : '#f08090' }]}>
@@ -56,22 +67,22 @@ export default function HomeScreen() {
         </View>
         <View style={s.quickStats}>
           <View style={s.stat}>
-            <Text style={[s.statVal, { color: Colors.green400 }]}>{formatCurrency(totalCredit())}</Text>
+            <Text style={[s.statVal, { color: Colors.green400 }]}>{currencySymbol}{formatNumber(totalCredit(), 2)}</Text>
             <Text style={s.statLbl}>Alacak</Text>
           </View>
           <View style={[s.stat, s.statBorder]}>
-            <Text style={[s.statVal, { color: '#f08090' }]}>{formatCurrency(totalDebt())}</Text>
+            <Text style={[s.statVal, { color: '#f08090' }]}>{currencySymbol}{formatNumber(totalDebt(), 2)}</Text>
             <Text style={s.statLbl}>Borç</Text>
           </View>
           <View style={s.stat}>
-            <Text style={[s.statVal, { color: netSavings >= 0 ? Colors.green400 : '#f08090' }]}>{formatCurrency(Math.abs(netSavings))}</Text>
+            <Text style={[s.statVal, { color: netSavings >= 0 ? Colors.green400 : '#f08090' }]}>{currencySymbol}{formatNumber(Math.abs(netSavings), 2)}</Text>
             <Text style={s.statLbl}>{netSavings >= 0 ? 'Tasarruf' : 'Açık'}</Text>
           </View>
         </View>
       </LinearGradient>
 
       <ScrollView style={s.body} contentContainerStyle={s.bodyContent}
-        refreshControl={<RefreshControl refreshing={false} onRefresh={refreshAll} tintColor={Colors.navy600} />}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refreshAll} tintColor={Colors.navy600} />}
         showsVerticalScrollIndicator={false}>
 
         {assets.length > 0 && (
@@ -93,8 +104,8 @@ export default function HomeScreen() {
                     <Text style={s.assetSub}>{formatNumber(asset.quantity, 4)} {asset.symbol}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={s.assetVal}>₺{formatNumber(asset.current_value, 2)}</Text>
-                    <Text style={[s.assetPnl, { color: isPos ? Colors.green500 : Colors.red500 }]}>{isPos ? '+' : ''}{formatCurrency(asset.pnl)}</Text>
+                    <Text style={s.assetVal}>{currencySymbol}{formatNumber(asset.current_value, 2)}</Text>
+                    <Text style={[s.assetPnl, { color: isPos ? Colors.green500 : Colors.red500 }]}>{isPos ? '+' : ''}{currencySymbol}{formatNumber(asset.pnl, 2)}</Text>
                   </View>
                 </View>
               );
@@ -122,7 +133,7 @@ export default function HomeScreen() {
                       {debt.due_date && <Text style={s.debtDate}>Vade: {formatDateShort(debt.due_date)}</Text>}
                     </View>
                     <Text style={[s.debtAmt, { color: isCredit ? Colors.green500 : Colors.red500 }]}>
-                      {isCredit ? '+' : '-'}{formatCurrency(debt.amount - debt.paid_amount)}
+                      {isCredit ? '+' : '-'}{currencySymbol}{formatNumber(debt.amount - debt.paid_amount, 2)}
                     </Text>
                   </View>
                 );

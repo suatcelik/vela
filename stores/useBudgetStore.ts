@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import { Transaction, Budget, Category, MonthlySummary, TransactionType } from '../types';
+import { Budget, Category, MonthlySummary, Transaction } from '../types';
 
 interface BudgetState {
   transactions: Transaction[];
@@ -78,8 +78,14 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
   fetchTransactions: async (month) => {
     const m = month ?? get().currentMonth;
     set({ loading: true });
+
+    // Yıl ve ayı parçalayarak o ayın son gününü buluyoruz (30, 31, 28, 29 vb.)
+    const [year, monthStr] = m.split('-');
+    const lastDay = new Date(parseInt(year), parseInt(monthStr), 0).getDate();
+
     const start = `${m}-01`;
-    const end = `${m}-31`;
+    const end = `${m}-${String(lastDay).padStart(2, '0')}`;
+
     const { data } = await supabase
       .from('transactions')
       .select('*')

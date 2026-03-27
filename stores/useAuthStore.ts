@@ -1,5 +1,5 @@
-import { create } from 'zustand';
 import { Session, User } from '@supabase/supabase-js';
+import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types';
 
@@ -58,13 +58,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signUp: async (email, password, fullName) => {
     set({ loading: true });
+    const sanitizedEmail = email.trim().toLowerCase();
+
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: sanitizedEmail,
       password,
       options: { data: { full_name: fullName } },
     });
+
     if (!error && data.user) {
-      // Profile is created automatically via Supabase trigger
+      // Supabase veritabanı trigger'ının UI'ı bekletmesini önlemek için optimistic update yapıyoruz.
+      set({
+        user: data.user,
+        session: data.session,
+        profile: {
+          id: data.user.id,
+          full_name: fullName,
+          avatar_url: null,
+          currency: 'TRY', // Varsayılan para birimi
+          created_at: new Date().toISOString()
+        }
+      });
     }
     set({ loading: false });
     return { error: error?.message ?? null };
