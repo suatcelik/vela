@@ -41,7 +41,7 @@ create table if not exists public.debts (
 create table if not exists public.assets (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references public.profiles(id) on delete cascade,
-  type        text not null check (type in ('gold','usd','eur','gbp','btc','eth','custom')),
+  type        text not null check (type in ('gold','usd','eur','gbp','btc','eth','stock','fund','commodity','custom')),
   symbol      text not null,
   name        text not null,
   quantity    numeric(18, 8) not null,

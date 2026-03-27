@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Stack, router, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useFonts,
+import {
+  useFonts,
   PlusJakartaSans_300Light,
   PlusJakartaSans_400Regular,
   PlusJakartaSans_500Medium,
@@ -16,6 +17,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { initialized, user, initialize } = useAuthStore();
+  const segments = useSegments();
 
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_300Light,
@@ -26,21 +28,24 @@ export default function RootLayout() {
     PlusJakartaSans_800ExtraBold,
   });
 
-  const segments = useSegments();
-
-  // Initialize auth on mount
   useEffect(() => {
-    initialize();
-  }, []);
+    let cleanup: undefined | (() => void);
 
-  // Hide splash when ready
+    initialize().then((unsubscribe) => {
+      cleanup = unsubscribe;
+    });
+
+    return () => {
+      cleanup?.();
+    };
+  }, [initialize]);
+
   useEffect(() => {
     if (fontsLoaded && initialized) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, initialized]);
 
-  // Auth-based redirect
   useEffect(() => {
     if (!initialized) return;
 

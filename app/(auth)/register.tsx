@@ -37,12 +37,14 @@ export default function RegisterScreen() {
       setError('Şifreler eşleşmiyor.');
       return;
     }
-    const { error: err } = await signUp(email, password, fullName);
+    const { error: err, needsEmailConfirmation } = await signUp(email, password, fullName);
     if (err) {
       setError(err);
-    } else {
-      // Supabase sends confirmation email — notify user
+    } else if (needsEmailConfirmation) {
+      setError('Kayıt başarılı. Giriş yapmadan önce e-posta adresini doğrulaman gerekiyor.');
       router.replace('/(auth)/login');
+    } else {
+      router.replace('/(tabs)');
     }
   };
 
