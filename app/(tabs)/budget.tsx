@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, RefreshControl } from 'react-native';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useBudgetStore } from '../../stores/useBudgetStore';
-import { Colors, Fonts, Spacing, Radius, Shadow } from '../../constants/theme';
-import { formatCurrency, formatMonthLabel, formatDateShort } from '../../lib/formatters';
+import React, { useEffect, useState } from 'react';
+import { Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { CATEGORIES } from '../../constants/categories';
+import { Colors, Fonts, Radius, Shadow, Spacing } from '../../constants/theme';
+import { formatCurrency, formatDateShort, formatMonthLabel } from '../../lib/formatters';
+import { useBudgetStore } from '../../stores/useBudgetStore';
 import { Category, TransactionType } from '../../types';
 
 const CAT_KEYS = Object.keys(CATEGORIES) as Category[];
@@ -54,18 +55,21 @@ export default function BudgetScreen() {
         <View style={s.headerTop}>
           <Text style={s.headerTitle}>Bütçe</Text>
           <TouchableOpacity style={s.budgetSetBtn} onPress={() => setShowBudget(true)}>
-            <Text style={s.budgetSetTxt}>Limitler ✏️</Text>
+            <Feather name="settings" size={14} color="rgba(255,255,255,0.8)" style={{ marginRight: 4 }} />
+            <Text style={s.budgetSetTxt}>Limitler</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Month selector */}
         <View style={s.monthRow}>
-          <TouchableOpacity onPress={prevMonth} style={s.monthArrow}><Text style={s.monthArrowTxt}>‹</Text></TouchableOpacity>
+          <TouchableOpacity onPress={prevMonth} style={s.monthArrow}>
+            <Feather name="chevron-left" size={24} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
           <Text style={s.monthLabel}>{formatMonthLabel(currentMonth)}</Text>
-          <TouchableOpacity onPress={nextMonth} style={s.monthArrow}><Text style={s.monthArrowTxt}>›</Text></TouchableOpacity>
+          <TouchableOpacity onPress={nextMonth} style={s.monthArrow}>
+            <Feather name="chevron-right" size={24} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
         </View>
 
-        {/* Summary cards */}
         <View style={s.sumRow}>
           <View style={s.sumCard}>
             <Text style={s.sumLbl}>Gelir</Text>
@@ -77,7 +81,6 @@ export default function BudgetScreen() {
           </View>
         </View>
 
-        {/* Net bar */}
         <View style={s.netBar}>
           <View style={s.netBarRow}>
             <Text style={s.netBarLbl}>Net Tasarruf</Text>
@@ -91,7 +94,6 @@ export default function BudgetScreen() {
           </View>
         </View>
 
-        {/* Tab */}
         <View style={s.tabRow}>
           {(['overview', 'list'] as const).map((t) => (
             <TouchableOpacity key={t} style={[s.tabBtn, tab === t && s.tabActive]} onPress={() => setTab(t)}>
@@ -114,7 +116,7 @@ export default function BudgetScreen() {
               <View key={cat} style={s.catCard}>
                 <View style={s.catRow}>
                   <View style={[s.catIcon, { backgroundColor: info.bg }]}>
-                    <Text style={{ fontSize: 16 }}>{info.icon}</Text>
+                    <MaterialCommunityIcons name={info.icon as any} size={20} color={info.color} />
                   </View>
                   <Text style={s.catName}>{info.label}</Text>
                   <View style={{ alignItems: 'flex-end' }}>
@@ -140,7 +142,7 @@ export default function BudgetScreen() {
             return (
               <TouchableOpacity key={tx.id} style={s.txCard} onLongPress={() => deleteTransaction(tx.id)} activeOpacity={0.85}>
                 <View style={[s.txIcon, { backgroundColor: cat?.bg ?? Colors.bg }]}>
-                  <Text style={{ fontSize: 16 }}>{cat?.icon ?? '📦'}</Text>
+                  <MaterialCommunityIcons name={(cat?.icon || 'package-variant-closed') as any} size={20} color={cat?.color || Colors.navy700} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.txDesc}>{tx.description || cat?.label || 'İşlem'}</Text>
@@ -156,7 +158,7 @@ export default function BudgetScreen() {
 
         {tab === 'list' && transactions.length === 0 && (
           <View style={s.empty}>
-            <Text style={{ fontSize: 48 }}>💰</Text>
+            <Feather name="list" size={56} color={Colors.navy300} />
             <Text style={s.emptyTitle}>İşlem yok</Text>
             <Text style={s.emptyDesc}>+ ile gelir veya gider ekle</Text>
           </View>
@@ -165,21 +167,23 @@ export default function BudgetScreen() {
       </ScrollView>
 
       <TouchableOpacity style={s.fab} onPress={() => setShowAdd(true)}>
-        <Text style={s.fabTxt}>＋</Text>
+        <Feather name="plus" size={24} color={Colors.white} />
       </TouchableOpacity>
 
-      {/* Add Transaction Modal */}
       <Modal visible={showAdd} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modal}>
           <View style={s.modalHdr}>
             <Text style={s.modalTitle}>İşlem Ekle</Text>
-            <TouchableOpacity onPress={() => setShowAdd(false)}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowAdd(false)}>
+              <Feather name="x" size={24} color={Colors.textMuted} />
+            </TouchableOpacity>
           </View>
           <ScrollView style={{ flex: 1, padding: Spacing.xl }} keyboardShouldPersistTaps="handled">
             <View style={s.typeRow}>
               {(['expense', 'income'] as const).map((t) => (
                 <TouchableOpacity key={t} style={[s.typeBtn, form.type === t && s.typeBtnActive]} onPress={() => setForm((f) => ({ ...f, type: t }))}>
-                  <Text style={[s.typeTxt, form.type === t && { color: Colors.white }]}>{t === 'expense' ? '📤 Gider' : '📥 Gelir'}</Text>
+                  <Feather name={t === 'expense' ? "arrow-up-circle" : "arrow-down-circle"} size={16} color={form.type === t ? Colors.white : Colors.textMuted} style={{ marginRight: 6 }} />
+                  <Text style={[s.typeTxt, form.type === t && { color: Colors.white }]}>{t === 'expense' ? 'Gider' : 'Gelir'}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -198,7 +202,7 @@ export default function BudgetScreen() {
                       const info = CATEGORIES[k];
                       return (
                         <TouchableOpacity key={k} style={[s.catChip, form.category === k && s.catChipActive]} onPress={() => setForm((f) => ({ ...f, category: k }))}>
-                          <Text style={{ fontSize: 16 }}>{info.icon}</Text>
+                          <MaterialCommunityIcons name={info.icon as any} size={18} color={form.category === k ? Colors.white : Colors.navy500} />
                           <Text style={[s.catChipTxt, form.category === k && { color: Colors.white }]}>{info.label}</Text>
                         </TouchableOpacity>
                       );
@@ -220,12 +224,13 @@ export default function BudgetScreen() {
         </View>
       </Modal>
 
-      {/* Budget Limits Modal */}
       <Modal visible={showBudget} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modal}>
           <View style={s.modalHdr}>
             <Text style={s.modalTitle}>Kategori Limitleri</Text>
-            <TouchableOpacity onPress={() => setShowBudget(false)}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowBudget(false)}>
+              <Feather name="x" size={24} color={Colors.textMuted} />
+            </TouchableOpacity>
           </View>
           <ScrollView style={{ flex: 1, padding: Spacing.xl }} keyboardShouldPersistTaps="handled">
             {CAT_KEYS.filter((k) => k !== 'genel' && k !== 'diger').map((k) => {
@@ -233,7 +238,10 @@ export default function BudgetScreen() {
               const { limit } = budgetProgress(k);
               return (
                 <View key={k} style={{ marginBottom: Spacing.lg }}>
-                  <Text style={s.fieldLabel}>{info.icon} {info.label}</Text>
+                  <Text style={s.fieldLabel}>
+                    <MaterialCommunityIcons name={info.icon as any} size={14} color={Colors.textSecondary} style={{ marginRight: 4 }} />
+                    {info.label}
+                  </Text>
                   <TextInput style={s.field} placeholder={limit > 0 ? String(limit) : 'Limit yok'}
                     keyboardType="numeric" value={budgetForm[k] ?? (limit > 0 ? String(limit) : '')}
                     onChangeText={(v) => setBudgetForm((f) => ({ ...f, [k]: v }))} />
@@ -255,11 +263,10 @@ const s = StyleSheet.create({
   header: { paddingTop: 56, paddingHorizontal: Spacing.xl, paddingBottom: Spacing.lg },
   headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
   headerTitle: { fontFamily: Fonts.extraBold, fontSize: 22, color: Colors.white },
-  budgetSetBtn: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: Radius.full },
+  budgetSetBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: Radius.full },
   budgetSetTxt: { fontFamily: Fonts.semiBold, fontSize: 12, color: 'rgba(255,255,255,0.8)' },
   monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.xl, marginBottom: Spacing.md },
   monthArrow: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  monthArrowTxt: { fontSize: 22, color: 'rgba(255,255,255,0.6)' },
   monthLabel: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.white },
   sumRow: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.md },
   sumCard: { flex: 1, backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: Radius.lg, padding: Spacing.lg, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
@@ -296,19 +303,17 @@ const s = StyleSheet.create({
   emptyDesc: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted },
   hint: { fontFamily: Fonts.regular, fontSize: 11, color: Colors.textMuted, textAlign: 'center', marginTop: 8 },
   fab: { position: 'absolute', right: 20, bottom: 90, width: 52, height: 52, borderRadius: 18, backgroundColor: Colors.navy600, alignItems: 'center', justifyContent: 'center', ...Shadow.lg },
-  fabTxt: { fontSize: 24, color: Colors.white, lineHeight: 28 },
   modal: { flex: 1, backgroundColor: Colors.bg },
   modalHdr: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.xl, paddingTop: 56, backgroundColor: Colors.white, borderBottomWidth: 1, borderColor: Colors.border },
   modalTitle: { fontFamily: Fonts.extraBold, fontSize: 20, color: Colors.textPrimary },
-  modalClose: { fontSize: 20, color: Colors.textMuted },
   typeRow: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.xl },
-  typeBtn: { flex: 1, height: 44, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  typeBtn: { flex: 1, height: 44, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   typeBtnActive: { backgroundColor: Colors.navy700, borderColor: Colors.navy700 },
   typeTxt: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.textMuted },
-  catChip: { alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.white },
+  catChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 8, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.white },
   catChipActive: { backgroundColor: Colors.navy700, borderColor: Colors.navy700 },
-  catChipTxt: { fontFamily: Fonts.semiBold, fontSize: 10, color: Colors.textMuted },
-  fieldLabel: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.textSecondary, marginBottom: 6 },
+  catChipTxt: { fontFamily: Fonts.semiBold, fontSize: 12, color: Colors.textMuted },
+  fieldLabel: { flexDirection: 'row', alignItems: 'center', fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.textSecondary, marginBottom: 6 },
   field: { height: 52, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, paddingHorizontal: Spacing.lg, fontFamily: Fonts.regular, fontSize: 15, color: Colors.textPrimary, backgroundColor: Colors.white },
   saveBtn: { height: 52, backgroundColor: Colors.navy600, borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center' },
   saveBtnTxt: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.white },

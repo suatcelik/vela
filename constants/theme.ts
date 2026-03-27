@@ -5,7 +5,9 @@ export const Colors = {
   navy800: '#0a1f42',
   navy700: '#0d2d5e',
   navy600: '#1a4080',
+  navy500: '#2758a0', // EKLENDI
   navy400: '#3a70c0',
+  navy300: '#759cd4', // EKLENDI
   navy200: '#a8c4e8',
   navy100: '#dce9f7',
 

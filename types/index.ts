@@ -37,7 +37,8 @@ export interface Debt {
 }
 
 // ─── Assets / Portfolio ─────────────────────────────────
-export type AssetType = 'gold' | 'usd' | 'eur' | 'gbp' | 'btc' | 'eth' | 'custom';
+// Yeni varlık türleri (stock, fund, commodity) buraya eklendi
+export type AssetType = 'gold' | 'usd' | 'eur' | 'gbp' | 'btc' | 'eth' | 'stock' | 'fund' | 'commodity' | 'custom';
 
 export interface Asset {
   id: string;

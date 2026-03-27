@@ -1,9 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuthStore } from '../../stores/useAuthStore';
-import { Colors, Fonts, Spacing, Radius, Shadow } from '../../constants/theme';
+import React from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Colors, Fonts, Radius, Shadow, Spacing } from '../../constants/theme';
 import { initials } from '../../lib/formatters';
+import { useAuthStore } from '../../stores/useAuthStore';
 
 export default function ProfileScreen() {
   const { profile, user, signOut } = useAuthStore();
@@ -17,17 +18,17 @@ export default function ProfileScreen() {
   };
 
   const items = [
-    { icon: '👤', label: 'Ad Soyad', value: profile?.full_name ?? '—' },
-    { icon: '📧', label: 'E-posta', value: user?.email ?? '—' },
-    { icon: '💰', label: 'Para Birimi', value: profile?.currency ?? 'TRY' },
+    { icon: 'user', label: 'Ad Soyad', value: profile?.full_name ?? '—' },
+    { icon: 'mail', label: 'E-posta', value: user?.email ?? '—' },
+    { icon: 'dollar-sign', label: 'Para Birimi', value: profile?.currency ?? 'TRY' },
   ];
 
   const menuItems = [
-    { icon: '🔔', label: 'Bildirimler' },
-    { icon: '🌙', label: 'Dark Mode' },
-    { icon: '📤', label: 'Veriyi Dışa Aktar' },
-    { icon: '🔒', label: 'Gizlilik Politikası' },
-    { icon: '💬', label: 'Destek' },
+    { icon: 'bell', label: 'Bildirimler' },
+    { icon: 'moon', label: 'Dark Mode' },
+    { icon: 'upload', label: 'Veriyi Dışa Aktar' },
+    { icon: 'shield', label: 'Gizlilik Politikası' },
+    { icon: 'message-circle', label: 'Destek' },
   ];
 
   return (
@@ -43,12 +44,11 @@ export default function ProfileScreen() {
       </LinearGradient>
 
       <ScrollView style={s.body} contentContainerStyle={s.bodyContent} showsVerticalScrollIndicator={false}>
-        {/* Info */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>Hesap Bilgileri</Text>
           {items.map((item) => (
             <View key={item.label} style={s.infoRow}>
-              <Text style={s.infoIcon}>{item.icon}</Text>
+              <Feather name={item.icon as any} size={20} color={Colors.navy500} style={s.infoIcon} />
               <View style={{ flex: 1 }}>
                 <Text style={s.infoLabel}>{item.label}</Text>
                 <Text style={s.infoValue}>{item.value}</Text>
@@ -57,20 +57,19 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        {/* Menu */}
         <View style={s.section}>
           <Text style={s.sectionTitle}>Ayarlar</Text>
           {menuItems.map((item) => (
             <TouchableOpacity key={item.label} style={s.menuRow} activeOpacity={0.7}>
-              <Text style={s.menuIcon}>{item.icon}</Text>
+              <Feather name={item.icon as any} size={20} color={Colors.navy500} style={s.menuIcon} />
               <Text style={s.menuLabel}>{item.label}</Text>
-              <Text style={s.menuArrow}>›</Text>
+              <Feather name="chevron-right" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Sign out */}
         <TouchableOpacity style={s.signOutBtn} onPress={handleSignOut}>
+          <Feather name="log-out" size={18} color={Colors.red500} style={{ marginRight: 8 }} />
           <Text style={s.signOutTxt}>Çıkış Yap</Text>
         </TouchableOpacity>
 
@@ -93,14 +92,13 @@ const s = StyleSheet.create({
   section: { backgroundColor: Colors.white, borderRadius: Radius.xl, overflow: 'hidden', ...Shadow.sm },
   sectionTitle: { fontFamily: Fonts.bold, fontSize: 12, color: Colors.textMuted, letterSpacing: 0.08, textTransform: 'uppercase', padding: Spacing.lg, paddingBottom: Spacing.sm },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg, borderTopWidth: 1, borderColor: Colors.border },
-  infoIcon: { fontSize: 18, width: 24, textAlign: 'center' },
+  infoIcon: { width: 24, textAlign: 'center' },
   infoLabel: { fontFamily: Fonts.medium, fontSize: 11, color: Colors.textMuted },
   infoValue: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.textPrimary, marginTop: 2 },
   menuRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg, borderTopWidth: 1, borderColor: Colors.border },
-  menuIcon: { fontSize: 18, width: 24, textAlign: 'center' },
+  menuIcon: { width: 24, textAlign: 'center' },
   menuLabel: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.textPrimary, flex: 1 },
-  menuArrow: { fontSize: 20, color: Colors.textMuted },
-  signOutBtn: { backgroundColor: Colors.red100, borderRadius: Radius.xl, height: 52, alignItems: 'center', justifyContent: 'center' },
+  signOutBtn: { backgroundColor: Colors.red100, borderRadius: Radius.xl, height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   signOutTxt: { fontFamily: Fonts.bold, fontSize: 15, color: Colors.red500 },
   version: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, textAlign: 'center' },
 });

@@ -1,6 +1,7 @@
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ASSET_LABELS } from '../../constants/categories';
 import { Colors, Fonts, Radius, Shadow, Spacing } from '../../constants/theme';
@@ -9,18 +10,17 @@ import { useAssetStore } from '../../stores/useAssetStore';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useBudgetStore } from '../../stores/useBudgetStore';
 import { useDebtStore } from '../../stores/useDebtStore';
+import { AssetWithValue, ExchangeRates } from '../../types';
 
 export default function HomeScreen() {
   const { profile } = useAuthStore();
-  const { debts, totalCredit, totalDebt, fetchAll: fetchDebts } = useDebtStore();
-  const { fetchAssets, fetchRates, assetsWithValue, totalValue, totalPnL, totalPnLPercent } = useAssetStore();
+  const { debts, fetchAll: fetchDebts } = useDebtStore();
+  const { assets, rates, fetchAssets, fetchRates } = useAssetStore();
   const { fetchTransactions, fetchBudgets, monthlyIncome, monthlyExpense } = useBudgetStore();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const firstName = profile?.full_name?.split(' ')[0] ?? 'Kullanıcı';
-
-  // Dinamik para birimi sembolü
   const currencySymbol = profile?.currency === 'USD' ? '$' : profile?.currency === 'EUR' ? '€' : '₺';
 
   const hour = new Date().getHours();
@@ -32,15 +32,62 @@ export default function HomeScreen() {
     setIsRefreshing(false);
   };
 
-  useEffect(() => { refreshAll(); }, []);
+  useFocusEffect(
+    useCallback(() => {
+      refreshAll();
+    }, [])
+  );
 
-  const assets = assetsWithValue().slice(0, 3);
-  const recentDebts = debts.filter((d) => d.status !== 'paid').slice(0, 3);
-  const portValue = totalValue();
-  const pnl = totalPnL();
-  const pnlPct = totalPnLPercent();
-  const netWorth = portValue + totalCredit() - totalDebt();
+  const totalCredit = useMemo(() => {
+    return debts
+      .filter((d) => d.type === 'credit' && d.status !== 'paid')
+      .reduce((sum, d) => sum + (d.amount - d.paid_amount), 0);
+  }, [debts]);
+
+  const totalDebt = useMemo(() => {
+    return debts
+      .filter((d) => d.type === 'debt' && d.status !== 'paid')
+      .reduce((sum, d) => sum + (d.amount - d.paid_amount), 0);
+  }, [debts]);
+
+  const assetsWithCurrentValue = useMemo<AssetWithValue[]>(() => {
+    const rateKey: Record<string, keyof ExchangeRates> = {
+      gold: 'XAU', usd: 'USD', eur: 'EUR', gbp: 'GBP', btc: 'BTC', eth: 'ETH',
+    };
+
+    if (!rates) {
+      return assets.map((a) => ({
+        ...a,
+        current_price: a.buy_price,
+        current_value: a.quantity * a.buy_price,
+        pnl: 0,
+        pnl_percent: 0
+      }));
+    }
+
+    return assets.map((a) => {
+      const key = rateKey[a.type];
+      const current_price = (key && rates[key] ? rates[key] : a.buy_price) as number;
+      const current_value = a.quantity * current_price;
+      const cost = a.quantity * a.buy_price;
+      const pnl = current_value - cost;
+      const pnl_percent = cost > 0 ? (pnl / cost) * 100 : 0;
+
+      return { ...a, current_price, current_value, pnl, pnl_percent };
+    });
+  }, [assets, rates]);
+
+  const portValue = useMemo(() => assetsWithCurrentValue.reduce((s, a) => s + a.current_value, 0), [assetsWithCurrentValue]);
+  const totalCost = useMemo(() => assets.reduce((s, a) => s + a.quantity * a.buy_price, 0), [assets]);
+
+  const pnl = portValue - totalCost;
+  const pnlPct = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
+
+  const netWorth = portValue + totalCredit - totalDebt;
   const netSavings = monthlyIncome() - monthlyExpense();
+
+  const topAssets = assetsWithCurrentValue.slice(0, 3);
+  const recentDebts = debts.filter((d) => d.status !== 'paid').slice(0, 3);
 
   return (
     <View style={s.container}>
@@ -59,19 +106,20 @@ export default function HomeScreen() {
           <Text style={s.netVal}>{currencySymbol}{formatNumber(netWorth, 2)}</Text>
           {pnl !== 0 && (
             <View style={[s.pnlBadge, { backgroundColor: pnl >= 0 ? 'rgba(0,200,150,0.15)' : 'rgba(240,64,96,0.15)', borderColor: pnl >= 0 ? 'rgba(0,200,150,0.3)' : 'rgba(240,64,96,0.3)' }]}>
+              <Feather name={pnl >= 0 ? "trending-up" : "trending-down"} size={12} color={pnl >= 0 ? Colors.green400 : '#f08090'} style={{ marginRight: 4 }} />
               <Text style={[s.pnlTxt, { color: pnl >= 0 ? Colors.green400 : '#f08090' }]}>
-                {pnl >= 0 ? '▲' : '▼'} Portföy {pctStr(pnlPct)}
+                Portföy {pctStr(pnlPct)}
               </Text>
             </View>
           )}
         </View>
         <View style={s.quickStats}>
           <View style={s.stat}>
-            <Text style={[s.statVal, { color: Colors.green400 }]}>{currencySymbol}{formatNumber(totalCredit(), 2)}</Text>
+            <Text style={[s.statVal, { color: Colors.green400 }]}>{currencySymbol}{formatNumber(totalCredit, 2)}</Text>
             <Text style={s.statLbl}>Alacak</Text>
           </View>
           <View style={[s.stat, s.statBorder]}>
-            <Text style={[s.statVal, { color: '#f08090' }]}>{currencySymbol}{formatNumber(totalDebt(), 2)}</Text>
+            <Text style={[s.statVal, { color: '#f08090' }]}>{currencySymbol}{formatNumber(totalDebt, 2)}</Text>
             <Text style={s.statLbl}>Borç</Text>
           </View>
           <View style={s.stat}>
@@ -85,19 +133,19 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refreshAll} tintColor={Colors.navy600} />}
         showsVerticalScrollIndicator={false}>
 
-        {assets.length > 0 && (
+        {topAssets.length > 0 && (
           <View>
             <View style={s.sectionRow}>
               <Text style={s.sectionTitle}>Portföy</Text>
               <TouchableOpacity onPress={() => router.push('/(tabs)/portfolio')}><Text style={s.seeAll}>Tümünü gör →</Text></TouchableOpacity>
             </View>
-            {assets.map((asset) => {
-              const info = ASSET_LABELS[asset.type];
+            {topAssets.map((asset) => {
+              const info = ASSET_LABELS[asset.type as keyof typeof ASSET_LABELS];
               const isPos = asset.pnl >= 0;
               return (
                 <View key={asset.id} style={[s.assetItem, { marginBottom: Spacing.sm }]}>
                   <View style={[s.assetIcon, { backgroundColor: info?.bg ?? Colors.bg }]}>
-                    <Text style={{ fontSize: 18 }}>{info?.icon ?? '💎'}</Text>
+                    <MaterialCommunityIcons name={(info?.icon || 'diamond-stone') as any} size={20} color={Colors.navy700} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={s.assetName}>{asset.name}</Text>
@@ -142,9 +190,9 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {assets.length === 0 && recentDebts.length === 0 && (
+        {topAssets.length === 0 && recentDebts.length === 0 && (
           <View style={s.empty}>
-            <Text style={{ fontSize: 56 }}>⚓</Text>
+            <Feather name="anchor" size={56} color={Colors.navy300} />
             <Text style={s.emptyTitle}>Vela'ya hoş geldin!</Text>
             <Text style={s.emptyDesc}>Portföy veya borç sekmesinden başlayabilirsin.</Text>
           </View>
@@ -154,13 +202,15 @@ export default function HomeScreen() {
           <Text style={[s.sectionTitle, { marginBottom: Spacing.md }]}>Hızlı İşlemler</Text>
           <View style={s.actGrid}>
             {[
-              { icon: '💸', label: 'Borç Ekle', tab: '/(tabs)/debts' },
-              { icon: '📈', label: 'Varlık Ekle', tab: '/(tabs)/portfolio' },
-              { icon: '💰', label: 'Harcama', tab: '/(tabs)/budget' },
-              { icon: '👤', label: 'Profil', tab: '/(tabs)/profile' },
+              { icon: 'credit-card', label: 'Borç Ekle', tab: '/(tabs)/debts', color: Colors.red500 },
+              { icon: 'trending-up', label: 'Varlık Ekle', tab: '/(tabs)/portfolio', color: Colors.green500 },
+              { icon: 'shopping-bag', label: 'Harcama', tab: '/(tabs)/budget', color: Colors.navy500 },
+              { icon: 'user', label: 'Profil', tab: '/(tabs)/profile', color: Colors.navy700 },
             ].map((item) => (
               <TouchableOpacity key={item.label} style={s.actCard} onPress={() => router.push(item.tab as any)}>
-                <Text style={{ fontSize: 26 }}>{item.icon}</Text>
+                <View style={[s.actIconWrap, { backgroundColor: `${item.color}15` }]}>
+                  <Feather name={item.icon as any} size={24} color={item.color} />
+                </View>
                 <Text style={s.actLabel}>{item.label}</Text>
               </TouchableOpacity>
             ))}
@@ -182,7 +232,7 @@ const s = StyleSheet.create({
   netCard: { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', borderRadius: Radius.xl, padding: Spacing.xl, marginBottom: Spacing.md },
   netLbl: { fontFamily: Fonts.medium, fontSize: 12, color: 'rgba(255,255,255,0.45)', marginBottom: 4 },
   netVal: { fontFamily: Fonts.extraBold, fontSize: 32, color: Colors.white, letterSpacing: -1, marginBottom: Spacing.sm },
-  pnlBadge: { borderWidth: 1, borderRadius: Radius.full, paddingHorizontal: 12, paddingVertical: 3, alignSelf: 'flex-start' },
+  pnlBadge: { borderWidth: 1, borderRadius: Radius.full, paddingHorizontal: 12, paddingVertical: 4, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center' },
   pnlTxt: { fontFamily: Fonts.semiBold, fontSize: 11 },
   quickStats: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: Radius.lg, overflow: 'hidden' },
   stat: { flex: 1, alignItems: 'center', paddingVertical: Spacing.md, gap: 2 },
@@ -210,6 +260,7 @@ const s = StyleSheet.create({
   emptyTitle: { fontFamily: Fonts.extraBold, fontSize: 20, color: Colors.textPrimary },
   emptyDesc: { fontFamily: Fonts.regular, fontSize: 14, color: Colors.textMuted, textAlign: 'center', maxWidth: 260 },
   actGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
-  actCard: { width: '47%', backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', gap: Spacing.sm, ...Shadow.sm },
-  actLabel: { fontFamily: Fonts.semiBold, fontSize: 12, color: Colors.textPrimary, textAlign: 'center' },
+  actCard: { width: '47%', backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', gap: Spacing.md, ...Shadow.sm },
+  actIconWrap: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  actLabel: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.textPrimary, textAlign: 'center' },
 });

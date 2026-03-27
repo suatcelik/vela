@@ -1,12 +1,20 @@
+import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Modal, TextInput, Alert, RefreshControl,
+  Alert,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useDebtStore } from '../../stores/useDebtStore';
-import { Colors, Fonts, Spacing, Radius, Shadow } from '../../constants/theme';
+import { Colors, Fonts, Radius, Shadow, Spacing } from '../../constants/theme';
 import { formatCurrency, formatDateShort, initials } from '../../lib/formatters';
+import { useDebtStore } from '../../stores/useDebtStore';
 import { Debt } from '../../types';
 
 const AVATAR_COLORS = ['#1a6040', '#1a4080', '#602040', '#404010', '#204060'];
@@ -34,8 +42,10 @@ export default function DebtsScreen() {
     let contact = contacts.find((c) => c.name.toLowerCase() === form.contactName.toLowerCase());
     if (!contact) contact = (await addContact(form.contactName)) ?? undefined;
     if (!contact) return;
-    await addDebt({ contact_id: contact.id, type: form.type, amount: parseFloat(form.amount),
-      due_date: form.due_date || null, description: form.description || null, receipt_url: null });
+    await addDebt({
+      contact_id: contact.id, type: form.type, amount: parseFloat(form.amount),
+      due_date: form.due_date || null, description: form.description || null, receipt_url: null
+    });
     setShowAdd(false);
     setForm({ contactName: '', amount: '', type: 'credit', due_date: '', description: '' });
   };
@@ -79,7 +89,7 @@ export default function DebtsScreen() {
         showsVerticalScrollIndicator={false}>
         {filtered.length === 0 ? (
           <View style={s.empty}>
-            <Text style={{ fontSize: 48 }}>💸</Text>
+            <Feather name="credit-card" size={56} color={Colors.navy300} />
             <Text style={s.emptyTitle}>Kayıt yok</Text>
             <Text style={s.emptyDesc}>Sağ alttaki + ile ekle</Text>
           </View>
@@ -115,12 +125,13 @@ export default function DebtsScreen() {
               <View style={s.actions}>
                 <TouchableOpacity style={[s.actionBtn, { backgroundColor: isCredit ? Colors.green100 : Colors.red100, flex: 1 }]}
                   onPress={() => { setShowPay(debt); setPayAmount(String(remaining.toFixed(2))); }}>
+                  <Feather name="check" size={16} color={isCredit ? '#007a5a' : '#c03050'} />
                   <Text style={[s.actionTxt, { color: isCredit ? '#007a5a' : '#c03050' }]}>
-                    {isCredit ? '✓ Ödeme Al' : '✓ Ödeme Yap'}
+                    {isCredit ? 'Ödeme Al' : 'Ödeme Yap'}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[s.actionBtn, { backgroundColor: Colors.red100, width: 36 }]} onPress={() => confirmDelete(debt.id)}>
-                  <Text style={{ fontSize: 14 }}>🗑</Text>
+                <TouchableOpacity style={[s.actionBtn, { backgroundColor: Colors.red100, width: 44 }]} onPress={() => confirmDelete(debt.id)}>
+                  <Feather name="trash-2" size={18} color="#c03050" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -129,22 +140,24 @@ export default function DebtsScreen() {
       </ScrollView>
 
       <TouchableOpacity style={s.fab} onPress={() => setShowAdd(true)}>
-        <Text style={s.fabTxt}>＋</Text>
+        <Feather name="plus" size={24} color={Colors.white} />
       </TouchableOpacity>
 
-      {/* Add Modal */}
       <Modal visible={showAdd} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modal}>
           <View style={s.modalHdr}>
             <Text style={s.modalTitle}>Yeni Kayıt</Text>
-            <TouchableOpacity onPress={() => setShowAdd(false)}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowAdd(false)}>
+              <Feather name="x" size={24} color={Colors.textMuted} />
+            </TouchableOpacity>
           </View>
           <ScrollView style={{ flex: 1, padding: Spacing.xl }} keyboardShouldPersistTaps="handled">
             <View style={s.typeRow}>
               {(['credit', 'debt'] as const).map((t) => (
                 <TouchableOpacity key={t} style={[s.typeBtn, form.type === t && s.typeBtnActive]} onPress={() => setForm((f) => ({ ...f, type: t }))}>
+                  <Feather name={t === 'credit' ? "arrow-down-circle" : "arrow-up-circle"} size={16} color={form.type === t ? Colors.white : Colors.textMuted} />
                   <Text style={[s.typeTxt2, form.type === t && { color: Colors.white }]}>
-                    {t === 'credit' ? '📥 Alacak' : '📤 Borç'}
+                    {t === 'credit' ? 'Alacak' : 'Borç'}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -169,12 +182,13 @@ export default function DebtsScreen() {
         </View>
       </Modal>
 
-      {/* Payment Modal */}
       <Modal visible={!!showPay} animationType="slide" presentationStyle="pageSheet">
         <View style={s.modal}>
           <View style={s.modalHdr}>
             <Text style={s.modalTitle}>Ödeme</Text>
-            <TouchableOpacity onPress={() => setShowPay(null)}><Text style={s.modalClose}>✕</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowPay(null)}>
+              <Feather name="x" size={24} color={Colors.textMuted} />
+            </TouchableOpacity>
           </View>
           <View style={{ padding: Spacing.xl }}>
             <Text style={s.fieldLabel}>Tutar (₺)</Text>
@@ -221,23 +235,18 @@ const s = StyleSheet.create({
   progressFill: { height: '100%', borderRadius: 100 },
   desc: { fontFamily: Fonts.regular, fontSize: 12, color: Colors.textMuted, marginBottom: Spacing.sm },
   actions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-  actionBtn: { height: 34, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
-  actionTxt: { fontFamily: Fonts.bold, fontSize: 12 },
-  fab: { position: 'absolute', right: 20, bottom: 90, width: 52, height: 52, borderRadius: 18,
-    backgroundColor: Colors.navy600, alignItems: 'center', justifyContent: 'center', ...Shadow.lg },
-  fabTxt: { fontSize: 24, color: Colors.white, lineHeight: 28 },
+  actionBtn: { height: 40, borderRadius: Radius.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  actionTxt: { fontFamily: Fonts.bold, fontSize: 13 },
+  fab: { position: 'absolute', right: 20, bottom: 90, width: 52, height: 52, borderRadius: 18, backgroundColor: Colors.navy600, alignItems: 'center', justifyContent: 'center', ...Shadow.lg },
   modal: { flex: 1, backgroundColor: Colors.bg },
-  modalHdr: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: Spacing.xl, paddingTop: 56, backgroundColor: Colors.white, borderBottomWidth: 1, borderColor: Colors.border },
+  modalHdr: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: Spacing.xl, paddingTop: 56, backgroundColor: Colors.white, borderBottomWidth: 1, borderColor: Colors.border },
   modalTitle: { fontFamily: Fonts.extraBold, fontSize: 20, color: Colors.textPrimary },
-  modalClose: { fontSize: 20, color: Colors.textMuted },
   typeRow: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.xl },
-  typeBtn: { flex: 1, height: 44, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  typeBtn: { flex: 1, height: 44, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   typeBtnActive: { backgroundColor: Colors.navy700, borderColor: Colors.navy700 },
   typeTxt2: { fontFamily: Fonts.semiBold, fontSize: 14, color: Colors.textMuted },
   fieldLabel: { fontFamily: Fonts.semiBold, fontSize: 13, color: Colors.textSecondary, marginBottom: 6 },
-  field: { height: 52, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border,
-    paddingHorizontal: Spacing.lg, fontFamily: Fonts.regular, fontSize: 15, color: Colors.textPrimary, backgroundColor: Colors.white },
+  field: { height: 52, borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border, paddingHorizontal: Spacing.lg, fontFamily: Fonts.regular, fontSize: 15, color: Colors.textPrimary, backgroundColor: Colors.white },
   saveBtn: { height: 52, backgroundColor: Colors.navy600, borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center' },
   saveBtnTxt: { fontFamily: Fonts.bold, fontSize: 16, color: Colors.white },
 });
