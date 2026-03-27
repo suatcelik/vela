@@ -26,7 +26,14 @@ export default function PortfolioScreen() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ type: 'gold' as AssetType, name: '', symbol: '', quantity: '', buy_price: '' });
 
-  useEffect(() => { fetchAssets(); fetchRates(); }, []);
+  useEffect(() => {
+    const load = async () => {
+      await fetchAssets();
+      await fetchRates();
+    };
+
+    load();
+  }, []);
 
   const assets = assetsWithValue();
   const pnl = totalPnL();
