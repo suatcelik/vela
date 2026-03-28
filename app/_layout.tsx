@@ -12,11 +12,13 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '../stores/useAuthStore';
+import { useSettingsStore } from '../stores/useSettingsStore';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { initialized, user, initialize } = useAuthStore();
+  const { initialized: settingsInitialized, darkMode, initialize: initializeSettings } = useSettingsStore();
   const segments = useSegments();
 
   const [fontsLoaded] = useFonts({
@@ -35,16 +37,18 @@ export default function RootLayout() {
       cleanup = unsubscribe;
     });
 
+    initializeSettings();
+
     return () => {
       cleanup?.();
     };
-  }, [initialize]);
+  }, [initialize, initializeSettings]);
 
   useEffect(() => {
-    if (fontsLoaded && initialized) {
+    if (fontsLoaded && initialized && settingsInitialized) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, initialized]);
+  }, [fontsLoaded, initialized, settingsInitialized]);
 
   useEffect(() => {
     if (!initialized) return;
@@ -58,11 +62,11 @@ export default function RootLayout() {
     }
   }, [user, initialized, segments]);
 
-  if (!fontsLoaded || !initialized) return null;
+  if (!fontsLoaded || !initialized || !settingsInitialized) return null;
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={darkMode ? "light" : "dark"} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />

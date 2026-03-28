@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import Svg, { Path, Polyline, Circle, Rect } from 'react-native-svg';
 import { Colors, Fonts, Radius } from '../../constants/theme';
+import { useSettingsStore } from '../../stores/useSettingsStore';
 
 // ─── SVG Icons ───────────────────────────────────────────
 function HomeIcon({ filled, color }: { filled: boolean; color: string }) {
@@ -150,13 +151,18 @@ const tabStyles = StyleSheet.create({
 
 // ─── Layout ───────────────────────────────────────────────
 export default function TabsLayout() {
+  const { darkMode } = useSettingsStore();
+
+  const tabBarBackground = darkMode ? '#101b2d' : Colors.white;
+  const tabBarBorder = darkMode ? '#22314a' : Colors.border;
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Colors.white,
-          borderTopColor: Colors.border,
+          backgroundColor: tabBarBackground,
+          borderTopColor: tabBarBorder,
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 84 : 64,
           paddingBottom: Platform.OS === 'ios' ? 24 : 8,
