@@ -161,14 +161,9 @@ export const useAssetStore = create<AssetState>((set, get) => ({
   deleteAsset: async (id) => {
     const { error } = await supabase.from('assets').delete().eq('id', id);
     if (error) {
-  console.error('🚨 Supabase Fonksiyon Hatası detay:', {
-    name: error.name,
-    message: error.message,
-    context: (error as any)?.context,
-  });
-
-  throw new Error(error.message || 'Kur servisi hatası');
-}
+      console.error('Varlık silme hatası:', error);
+      throw new Error(error.message || 'Varlık silinemedi');
+    }
     set((s) => ({ assets: s.assets.filter((a) => a.id !== id) }));
   },
 }));
